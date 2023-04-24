@@ -1,6 +1,6 @@
-var net = require('net'),
-    util = require('util'),
-    log = function(args) {
+const net = require('net');
+const util = require('util');
+const log = function (args) {
         //console.log(args);
     },
     info = console.info,
@@ -47,29 +47,29 @@ var net = require('net'),
     },
     Address = {
         read: function (buffer, offset) {
-                  if (buffer[offset] == ATYP.IP_V4) {
-                      return util.format('%s.%s.%s.%s', buffer[offset+1], buffer[offset+2], buffer[offset+3], buffer[offset+4]);
-                  } else if (buffer[offset] == ATYP.DNS) {
-                      return buffer.toString('utf8', offset+2, offset+2+buffer[offset+1]);
-                  } else if (buffer[offset] == ATYP.IP_V6) {
-                      return buffer.slice(buffer[offset+1], buffer[offset+1+16]);
-                  }
-              },
-        sizeOf: function(buffer, offset) {
-                    if (buffer[offset] == ATYP.IP_V4) {
-                        return 4;
-                    } else if (buffer[offset] == ATYP.DNS) {
-                        return buffer[offset+1];
-                    } else if (buffer[offset] == ATYP.IP_V6) {
-                        return 16;
-                    }
-                }
+            if (buffer[offset] === ATYP.IP_V4) {
+                return util.format('%s.%s.%s.%s', buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], buffer[offset + 4]);
+            } else if (buffer[offset] === ATYP.DNS) {
+                return buffer.toString('utf8', offset + 2, offset + 2 + buffer[offset + 1]);
+            } else if (buffer[offset] === ATYP.IP_V6) {
+                return buffer.slice(buffer[offset + 1], buffer[offset + 1 + 16]);
+            }
+        },
+        sizeOf: function (buffer, offset) {
+            if (buffer[offset] === ATYP.IP_V4) {
+                return 4;
+            } else if (buffer[offset] === ATYP.DNS) {
+                return buffer[offset + 1];
+            } else if (buffer[offset] === ATYP.IP_V6) {
+                return 16;
+            }
+        }
     };
 
 function createSocksServer(cb) {
-    var socksServer = net.createServer();
+    const socksServer = net.createServer();
     socksServer.on('listening', function() {
-        var address = socksServer.address();
+        const address = socksServer.address();
         info('LISTENING %s:%s', address.address, address.port);
     });
     socksServer.on('connection', function(socket) {
@@ -86,8 +86,8 @@ function initSocksConnection(on_accept) {
 
     // remove from clients on disconnect
     this.on('end', function() {
-        var idx = clients.indexOf(this);
-        if (idx != -1) {
+        const idx = clients.indexOf(this);
+        if (idx !== -1) {
             clients.splice(idx, 1);
         }
     });
@@ -104,24 +104,23 @@ function initSocksConnection(on_accept) {
 function handshake(chunk) {
     this.removeListener('data', this.handshake);
 
-    var method_count = 0;
-
     // SOCKS Version 5 is the only support version
-    if (chunk[0] != SOCKS_VERSION) {
+    if (chunk[0] !== SOCKS_VERSION) {
         errorLog('handshake: wrong socks version: %d', chunk[0]);
         this.end();
     }
+
     // Number of authentication methods
-    method_count = chunk[1];
+    let method_count = chunk[1];
 
     this.auth_methods = [];
     // i starts on 1, since we've read chunk 0 & 1 already
-    for (var i=2; i < method_count + 2; i++) {
+    for (let i=2; i < method_count + 2; i++) {
         this.auth_methods.push(chunk[i]);
     }
     log('Supported auth methods: %j', this.auth_methods);
 
-    var resp = new Buffer(2);
+    const resp = new Buffer(2);
     resp[0] = 0x05;
     if (this.auth_methods.indexOf(AUTHENTICATION.NOAUTH) > -1) {
         log('Handing off to handleRequest');
@@ -138,10 +137,10 @@ function handshake(chunk) {
 
 function handleRequest(chunk) {
     this.removeListener('data', this.handleRequest);
-    var cmd=chunk[1],
+    let cmd = chunk[1],
         address,
         port,
-        offset=3;
+        offset = 3;
     // Wrong version!
     if (chunk[0] !== SOCKS_VERSION) {
         this.end('%d%d', 0x05, 0x01);
@@ -158,19 +157,18 @@ function handleRequest(chunk) {
 
     log('Request: type: %d -- to: %s:%s', chunk[1], address, port);
 
-    if (cmd == REQUEST_CMD.CONNECT) {
+    if (cmd === REQUEST_CMD.CONNECT) {
         this.request = chunk;
         this.on_accept(this, port, address, proxyReady.bind(this));
     } else {
         this.end('%d%d', 0x05, 0x01);
-        return;
     }
 }
 
 function proxyReady() {
     log('Indicating to the client that the proxy is ready');
     // creating response
-    var resp = new Buffer(this.request.length);
+    const resp = new Buffer(this.request.length);
     this.request.copy(resp);
     // rewrite response header
     resp[0] = SOCKS_VERSION;
@@ -178,8 +176,6 @@ function proxyReady() {
     resp[2] = 0x00;
     this.write(resp);
     log('Connected to: %s:%d', resp.toString('utf8', 4, resp.length - 2), resp.readUInt16BE(resp.length - 2));
-
-
 }
 
 module.exports = {

@@ -1,7 +1,7 @@
-var argyle = require('./packages/argyle');
-//var scan = require('./scan');
+const argyle = require('./packages/argyle');
+//const scan = require('./scan');
 
-var socks5_server = argyle(1084, '0.0.0.0', true);
+const socks5_server = argyle(1084, '0.0.0.0', true);
 
 socks5_server.on('connected', function(req, dest) {
     req.once('error', function(err) { dest.end(); req.end(); })
