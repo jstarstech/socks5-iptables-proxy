@@ -1,7 +1,7 @@
 import net from 'net';
 import util from 'util';
 import {EventEmitter} from 'events';
-import telnet from 'telnet-client';
+import {Telnet} from 'telnet-client';
 import async from "async";
 
 let params = process.argv.slice(2)
@@ -16,6 +16,7 @@ if (params.length) {
         loginPrompt: /login[: ]*$/i,
         username: 'admin',
         password: '89652773088',
+        timeout: 1500
     };
 }
 
@@ -23,7 +24,7 @@ const queue = async.queue(run_command, 1);
 
 /////// TELNET
 let telnet_ready = false;
-const connection = new telnet();
+const connection = new Telnet();
 connection.on('ready', prompt => {
     console.log("-- Telnet connected --");
 
@@ -37,7 +38,7 @@ connection.on('ready', prompt => {
         telnet_ready = true;
     });
 
-}).connect(params);
+})
 
 connection.on('timeout', () => {
     console.log('socket timeout!')
@@ -47,6 +48,8 @@ connection.on('timeout', () => {
 connection.on('close', () => {
     console.log('connection closed');
 });
+
+await connection.connect(params)
 /////// TELNET
 
 /////// QUEUE
@@ -62,12 +65,16 @@ queue.drain(() => {
 
     const cmds = tasks.join('; ');
 
-    connection.exec(cmds, response => {
-        queue.resume();
+    connection.exec(cmds, (err) => {
+        if (err) {
+            debugOut(err);
+        }
 
         tasks = [];
 
         console.log("-- All tasks are complete --");
+
+        queue.resume();
     });
 });
 
@@ -325,7 +332,7 @@ class Argyle extends EventEmitter {
                         responseBuf[1] = 0
                         responseBuf[2] = 0
 
-                        client.write(responseBuf) // emit success to client
+                        client.write(responseBuf) // emit success to a client
                         client.removeListener('data', onClientData)
                         client.resume()
                         self.emit('connected', client, dest)
