@@ -1,4 +1,4 @@
-var argyle = require('argyle');
+var argyle = require('./packages/argyle');
 //var scan = require('./scan');
 
 var socks5_server = argyle(1084, '0.0.0.0', true);
