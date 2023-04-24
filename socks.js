@@ -1,12 +1,15 @@
-const net = require('net');
-const util = require('util');
-const log = function (args) {
-        //console.log(args);
-    },
-    info = console.info,
-    errorLog = console.error,
-    clients = [],
-    SOCKS_VERSION = 5,
+import net from 'net';
+import util from 'util';
+
+const log = args => {
+    console.log(args);
+};
+
+const info = console.info;
+const errorLog = console.error;
+const clients = [];
+const SOCKS_VERSION = 5;
+
 /*
  * Authentication methods
  ************************
@@ -17,67 +20,71 @@ const log = function (args) {
  * o  X'80' to X'FE' RESERVED FOR PRIVATE METHODS
  * o  X'FF' NO ACCEPTABLE METHODS
  */
-    AUTHENTICATION = {
-        NOAUTH: 0x00,
-        GSSAPI: 0x01,
-        USERPASS: 0x02,
-        NONE: 0xFF
-    },
+const AUTHENTICATION = {
+    NOAUTH: 0x00,
+    GSSAPI: 0x01,
+    USERPASS: 0x02,
+    NONE: 0xFF
+};
+
 /*
  * o  CMD
  *    o  CONNECT X'01'
  *    o  BIND X'02'
  *    o  UDP ASSOCIATE X'03'
  */
-    REQUEST_CMD = {
-        CONNECT: 0x01,
-        BIND: 0x02,
-        UDP_ASSOCIATE: 0x03
-    },
+const REQUEST_CMD = {
+    CONNECT: 0x01,
+    BIND: 0x02,
+    UDP_ASSOCIATE: 0x03
+};
+
 /*
- * o  ATYP   address type of following address
- *    o  IP V4 address: X'01'
- *    o  DOMAINNAME: X'03'
- *    o  IP V6 address: X'04'
- */
-    ATYP = {
-        IP_V4: 0x01,
-        DNS: 0x03,
-        IP_V6: 0x04
-    },
-    Address = {
-        read: function (buffer, offset) {
-            if (buffer[offset] === ATYP.IP_V4) {
-                return util.format('%s.%s.%s.%s', buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], buffer[offset + 4]);
-            } else if (buffer[offset] === ATYP.DNS) {
-                return buffer.toString('utf8', offset + 2, offset + 2 + buffer[offset + 1]);
-            } else if (buffer[offset] === ATYP.IP_V6) {
-                return buffer.slice(buffer[offset + 1], buffer[offset + 1 + 16]);
-            }
-        },
-        sizeOf: function (buffer, offset) {
-            if (buffer[offset] === ATYP.IP_V4) {
-                return 4;
-            } else if (buffer[offset] === ATYP.DNS) {
-                return buffer[offset + 1];
-            } else if (buffer[offset] === ATYP.IP_V6) {
-                return 16;
-            }
+* o  ATYP   address type of following address
+*    o  IP V4 address: X'01'
+*    o  DOMAINNAME: X'03'
+*    o  IP V6 address: X'04'
+*/
+const ATYP = {
+    IP_V4: 0x01,
+    DNS: 0x03,
+    IP_V6: 0x04
+};
+
+const Address = {
+    read(buffer, offset) {
+        if (buffer[offset] === ATYP.IP_V4) {
+            return util.format('%s.%s.%s.%s', buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], buffer[offset + 4]);
+        } else if (buffer[offset] === ATYP.DNS) {
+            return buffer.toString('utf8', offset + 2, offset + 2 + buffer[offset + 1]);
+        } else if (buffer[offset] === ATYP.IP_V6) {
+            return buffer.slice(buffer[offset + 1], buffer[offset + 1 + 16]);
         }
-    };
+    },
+    sizeOf(buffer, offset) {
+        if (buffer[offset] === ATYP.IP_V4) {
+            return 4;
+        } else if (buffer[offset] === ATYP.DNS) {
+            return buffer[offset + 1];
+        } else if (buffer[offset] === ATYP.IP_V6) {
+            return 16;
+        }
+    }
+};
 
 function createSocksServer(cb) {
     const socksServer = net.createServer();
-    socksServer.on('listening', function() {
+    socksServer.on('listening', () => {
         const address = socksServer.address();
         info('LISTENING %s:%s', address.address, address.port);
     });
-    socksServer.on('connection', function(socket) {
+    socksServer.on('connection', socket => {
         info('CONNECTED %s:%s', socket.remoteAddress, socket.remotePort);
         initSocksConnection.bind(socket)(cb);
     });
     return socksServer;
 }
+
 //
 // socket is available as this
 function initSocksConnection(on_accept) {
@@ -85,13 +92,13 @@ function initSocksConnection(on_accept) {
     clients.push(this);
 
     // remove from clients on disconnect
-    this.on('end', function() {
+    this.on('end', function () {
         const idx = clients.indexOf(this);
         if (idx !== -1) {
             clients.splice(idx, 1);
         }
     });
-    this.on('error', function(e) {
+    this.on('error', e => {
         errorLog('%j', e);
     });
 
@@ -115,14 +122,14 @@ function handshake(chunk) {
 
     this.auth_methods = [];
     // i starts on 1, since we've read chunk 0 & 1 already
-    for (let i=2; i < method_count + 2; i++) {
+    for (let i = 2; i < method_count + 2; i++) {
         this.auth_methods.push(chunk[i]);
     }
     log('Supported auth methods: %j', this.auth_methods);
 
     const resp = new Buffer(2);
     resp[0] = 0x05;
-    if (this.auth_methods.indexOf(AUTHENTICATION.NOAUTH) > -1) {
+    if (this.auth_methods.includes(AUTHENTICATION.NOAUTH)) {
         log('Handing off to handleRequest');
         this.handleRequest = handleRequest.bind(this);
         this.on('data', this.handleRequest);
@@ -137,20 +144,20 @@ function handshake(chunk) {
 
 function handleRequest(chunk) {
     this.removeListener('data', this.handleRequest);
-    let cmd = chunk[1],
-        address,
-        port,
-        offset = 3;
+    let cmd = chunk[1];
+    let address;
+    let port;
+    let offset = 3;
     // Wrong version!
     if (chunk[0] !== SOCKS_VERSION) {
         this.end('%d%d', 0x05, 0x01);
         errorLog('handleRequest: wrong socks version: %d', chunk[0]);
         return;
-    } /* else if (chunk[2] == 0x00) {
-        this.end(util.format('%d%d', 0x05, 0x01));
-        errorLog('handleRequest: Mangled request. Reserved field is not null: %d', chunk[offset]);
-        return;
-    } */
+    }/* else if (chunk[2] == 0x00) {
+      this.end(util.format('%d%d', 0x05, 0x01));
+      errorLog('handleRequest: Mangled request. Reserved field is not null: %d', chunk[offset]);
+      return;
+  } */
     address = Address.read(chunk, 3);
     offset = 3 + Address.sizeOf(chunk, 3) + 2;
     port = chunk.readUInt16BE(offset);
@@ -178,6 +185,6 @@ function proxyReady() {
     log('Connected to: %s:%d', resp.toString('utf8', 4, resp.length - 2), resp.readUInt16BE(resp.length - 2));
 }
 
-module.exports = {
+export default {
     createServer: createSocksServer
 };

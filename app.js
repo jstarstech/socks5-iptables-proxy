@@ -1,18 +1,34 @@
-const argyle = require('./packages/argyle');
-//const scan = require('./scan');
+import argyle from './packages/argyle';
+//import scan from './scan';
 
 const socks5_server = argyle(1084, '0.0.0.0', true);
 
-socks5_server.on('connected', function(req, dest) {
-    req.once('error', function(err) { dest.end(); req.end(); })
-        .once('close', function() { dest.end(); req.end(); });
-    dest.once('error', function(err) { dest.end(); req.end(); })
-        .once('close', function() { dest.end(); req.end(); });
+socks5_server.on('connected', (req, dest) => {
+    req
+        .once('error', err => {
+            dest.end();
+            req.end();
+        })
+        .once('close', () => {
+            dest.end();
+            req.end();
+        });
 
-    req.on('data', function(chunk) {
+    dest
+        .once('error', err => {
+            dest.end();
+            req.end();
+        })
+        .once('close', () => {
+            dest.end();
+            req.end();
+        });
+
+    req.on('data', chunk => {
         dest.write(chunk);
     });
-    dest.on('data', function(chunk) {
+
+    dest.on('data', chunk => {
         req.write(chunk);
     });
 });

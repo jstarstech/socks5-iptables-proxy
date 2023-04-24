@@ -1,14 +1,15 @@
-const express = require('express');
-const async = require('async');
-const http = require('http');
-const url = require('url');
-const app = express();
-const xpath = require('xpath');
-const { DOMParser } = require('xmldom');
-const fs = require('fs');
+import express from 'express';
+import async from 'async';
+import http from 'http';
+import url from 'url';
+import xpath from 'xpath';
+import {DOMParser} from 'xmldom';
+import fs from 'fs';
 
-module.exports = function() {
-}
+export default () => {
+};
+
+const app = express();
 
 let result = '';
 
@@ -24,19 +25,19 @@ function run_command(hurl, callback) {
         method: 'GET'
     };
 
-    const request = http.get(options, function (res) {
+    const request = http.get(options, res => {
         let pageData = '';
 
         res.resume();
 
-        res.on('data', function (chunk) {
+        res.on('data', chunk => {
             if (res.statusCode === 200) {
                 pageData += chunk;
             }
         });
 
-        res.on('end', function () {
-            console.log("finish to fetch id: " + ip.hostname);
+        res.on('end', () => {
+            console.log(`finish to fetch id: ${ip.hostname}`);
 
             /* fs.writeFile('message' + ip.hostname + '.html', pageData, function (err) {
                 if (err) throw err;
@@ -46,7 +47,7 @@ function run_command(hurl, callback) {
 
             if (pageData) {
                 const doc = new DOMParser({
-                    errorHandler: function () {
+                    errorHandler() {
                     }
                 }).parseFromString(pageData);
                 const nodes = xpath.select('//*/title', doc);
@@ -61,17 +62,17 @@ function run_command(hurl, callback) {
                 }); */
             }
 
-            result += hurl + "n";
+            result += `${hurl}n`;
 
             callback();
         });
-    }).on('error', function (e) {
+    }).on('error', e => {
         //console.log("Error: " + options.hostname + "n" + e.message);
         //result += "Error: " + options.hostname + "n" + e.message + "n";
         callback();
     });
 
-    request.setTimeout(5000, function() {
+    request.setTimeout(5000, () => {
         request.abort();
     });
 }
@@ -85,22 +86,22 @@ const queue = async.queue(run_command, 1);
 queue.concurrency = 100;
 /////// QUEUE
 
-app.get('/get_titles', function(req, res){
+app.get('/get_titles', (req, res) => {
     const hosts = fs.readFileSync('hosts.txt').toString().split("rn");
 
     queue.push(hosts);
 
-    queue.drain = function() {
+    queue.drain = () => {
         res.send(result);
         console.log("-- All tasks are complete --");
     };
 });
 
-app.use(function(err, req, res, next){
-    console.error(err.stack);
+app.use(({stack}, req, res, next) => {
+    console.error(stack);
     res.send(500, 'Something broke!');
 });
 
-const server = app.listen(8088, function () {
+const server = app.listen(8088, () => {
     console.log('Listening on port %d', server.address().port);
 });
