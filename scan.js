@@ -3,17 +3,11 @@ import async from 'async';
 import http from 'http';
 import url from 'url';
 import xpath from 'xpath';
-import {DOMParser} from 'xmldom';
+import { DOMParser } from '@xmldom/xmldom'
 import fs from 'fs';
-
-export default () => {
-};
-
-const app = express();
 
 let result = '';
 
-/////// QUEUE
 function run_command(hurl, callback) {
     const ip = url.parse(hurl);
     const options = {
@@ -22,8 +16,11 @@ function run_command(hurl, callback) {
         port: ip.port,
         path: ip.pathname,
         agent: false,
-        method: 'GET'
+        method: 'GET',
+        timeout: 1000
     };
+    let live = false;
+    let title = false;
 
     const request = http.get(options, res => {
         let pageData = '';
@@ -43,18 +40,19 @@ function run_command(hurl, callback) {
                 if (err) throw err;
             }); */
 
-            let live = false;
-
             if (pageData) {
                 const doc = new DOMParser({
-                    errorHandler() {
+                    errorHandler(err) {
+                         console.log(err);
                     }
-                }).parseFromString(pageData);
-                const nodes = xpath.select('//*/title', doc);
+                })
+                    .parseFromString(pageData, 'text/html');
 
-                if (nodes[0]) {
+                title = doc.getElementsByTagName('title').item(0).textContent
+
+                if (title) {
                     live = true;
-                    console.log(nodes[0].firstChild.data);
+                    console.log(title);
                 }
 
                 /* fs.writeFile('message' + options.pageId +'.html', pageData, function (err) {
@@ -62,15 +60,19 @@ function run_command(hurl, callback) {
                 }); */
             }
 
-            result += `${hurl}n`;
+            result += `${hurl} ${live? 'up' : 'down'} Title: "${title}"<br />n`;
 
             callback();
         });
-    }).on('error', e => {
-        //console.log("Error: " + options.hostname + "n" + e.message);
-        //result += "Error: " + options.hostname + "n" + e.message + "n";
-        callback();
-    });
+    })
+        .on('error', e => {
+            //console.log("Error: " + options.hostname + "n" + e.message);
+            //result += "Error: " + options.hostname + "n" + e.message + "n";
+
+            result += `${hurl} ${live? 'up' : 'down'}<br />n`;
+
+            callback();
+        });
 
     request.setTimeout(5000, () => {
         request.abort();
@@ -84,23 +86,35 @@ const queue = async.queue(run_command, 1);
 }; */
 
 queue.concurrency = 100;
-/////// QUEUE
 
-app.get('/get_titles', (req, res) => {
-    const hosts = fs.readFileSync('hosts.txt').toString().split("rn");
 
-    queue.push(hosts);
+const app = express();
 
-    queue.drain = () => {
-        res.send(result);
+app.get('/get_titles', async (req, res) => {
+    result = '';
+    const hosts =
+        fs
+            .readFileSync('hosts.txt')
+            .toString()
+            .split("n")
+            .filter((el) => el !== '');
+
+    queue.drain(() => {
+        res.write(result);
+        res.end();
+
         console.log("-- All tasks are complete --");
-    };
+    });
+
+    await queue.push(hosts);
+
+    res.write(`<h1>Scan started! Queued ${hosts.length} hosts</h1>`)
 });
 
-app.use(({stack}, req, res, next) => {
-    console.error(stack);
-    res.send(500, 'Something broke!');
-});
+app.use((req, res, next) => {
+    res.status(404).send(
+        "<h1>Page not found on the server</h1>")
+})
 
 const server = app.listen(8088, () => {
     console.log('Listening on port %d', server.address().port);
