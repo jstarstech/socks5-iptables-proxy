@@ -1,8 +1,8 @@
-import Argyle from './packages/argyle';
+import Socks5ipt from './socks5ipt.js';
 
-const socks5_server = new Argyle(1084, '0.0.0.0', true);
+const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
 
-socks5_server.on('connected', (req, dest) => {
+socks5ipt.on('connected', (req, dest) => {
     req
         .once('error', err => {
             dest.end();

@@ -107,7 +107,7 @@ function expandAndCopy(old, newer) {
     return newBuf;
 }
 
-export default class Argyle extends EventEmitter {
+export default class Socks5ipt extends EventEmitter {
     socksVersion = 5
 
     constructor(port = 8080, host = '127.0.0.1', debug) {
