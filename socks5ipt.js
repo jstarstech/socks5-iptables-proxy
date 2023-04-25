@@ -89,12 +89,6 @@ for (let i = 0; i < 9000; i++) {
 
 const debugOut = console.log.bind(console);
 
-const STATES = {
-    handshake: 0,
-    request: 1,
-    forwarding: 2
-};
-
 function expandAndCopy(old, newer) {
     if (!old) {
         return newer;
@@ -108,7 +102,12 @@ function expandAndCopy(old, newer) {
 }
 
 export default class Socks5ipt extends EventEmitter {
-    socksVersion = 5
+    socksVersion = 5;
+    STATES = {
+        handshake: 0,
+        request: 1,
+        forwarding: 2
+    };
 
     constructor(port = 8080, host = '127.0.0.1', debug) {
         super();
@@ -136,7 +135,7 @@ export default class Socks5ipt extends EventEmitter {
     handleConnection(client) {
         const handlers = {};
         const self = this;
-        let curState = STATES.handshake;
+        let curState = this.STATES.handshake;
 
         function onClientData(chunk) {
             handlers[curState](chunk)
@@ -151,7 +150,7 @@ export default class Socks5ipt extends EventEmitter {
 
         let buffer = null;
 
-        handlers[STATES.handshake] = chunk => {
+        handlers[this.STATES.handshake] = chunk => {
             buffer = expandAndCopy(buffer, chunk)
 
             if (buffer.length < 2) {
@@ -180,7 +179,7 @@ export default class Socks5ipt extends EventEmitter {
                     if (buffer.length > nMethods + 2) {
                         const newChunk = buffer.slice(nMethods + 2);
                         buffer = null
-                        handlers[STATES.request](newChunk)
+                        handlers[this.STATES.request](newChunk)
                     }
 
                     buffer = null
@@ -195,7 +194,7 @@ export default class Socks5ipt extends EventEmitter {
 
         let proxyBuffers = [];
 
-        handlers[STATES.request] = async chunk => {
+        handlers[this.STATES.request] = async chunk => {
             buffer = expandAndCopy(buffer, chunk)
 
             if (buffer.length < 4) {
@@ -332,7 +331,7 @@ export default class Socks5ipt extends EventEmitter {
                 });
         }
 
-        handlers[STATES.forwarding] = chunk => {
+        handlers[this.STATES.forwarding] = chunk => {
             proxyBuffers.push(chunk);
         }
     }
