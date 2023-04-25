@@ -2,8 +2,7 @@ import express from 'express';
 import async from 'async';
 import http from 'http';
 import url from 'url';
-import xpath from 'xpath';
-import { DOMParser } from '@xmldom/xmldom'
+import {DOMParser} from '@xmldom/xmldom'
 import fs from 'fs';
 
 let result = '';
@@ -17,7 +16,7 @@ function run_command(hurl, callback) {
         path: ip.pathname,
         agent: false,
         method: 'GET',
-        timeout: 1000
+        // timeout: 1000
     };
     let live = false;
     let title = false;
@@ -34,7 +33,7 @@ function run_command(hurl, callback) {
         });
 
         res.on('end', () => {
-            console.log(`finish to fetch id: ${ip.hostname}`);
+            console.log(`Finish to fetch: ${hurl}`);
 
             /* fs.writeFile('message' + ip.hostname + '.html', pageData, function (err) {
                 if (err) throw err;
@@ -43,7 +42,7 @@ function run_command(hurl, callback) {
             if (pageData) {
                 const doc = new DOMParser({
                     errorHandler(err) {
-                         console.log(err);
+                        console.log(err);
                     }
                 })
                     .parseFromString(pageData, 'text/html');
@@ -60,19 +59,20 @@ function run_command(hurl, callback) {
                 }); */
             }
 
-            result += `${hurl} ${live? 'up' : 'down'} Title: "${title}"<br />n`;
+            result += `${hurl} ${live ? 'up' : 'down'} Title: "${title}"<br />n`;
 
             callback();
         });
-    })
-        .on('error', e => {
-            //console.log("Error: " + options.hostname + "n" + e.message);
-            //result += "Error: " + options.hostname + "n" + e.message + "n";
+    });
 
-            result += `${hurl} ${live? 'up' : 'down'}<br />n`;
+    request.on('error', e => {
+        //console.log("Error: " + options.hostname + "n" + e.message);
+        //result += "Error: " + options.hostname + "n" + e.message + "n";
 
-            callback();
-        });
+        result += `${hurl} ${live ? 'up' : 'down'}<br />n`;
+
+        callback();
+    });
 
     request.setTimeout(5000, () => {
         request.abort();
@@ -80,11 +80,6 @@ function run_command(hurl, callback) {
 }
 
 const queue = async.queue(run_command, 1);
-
-/* queue.drain = function() {
-    console.log("-- All tasks are complete --");
-}; */
-
 queue.concurrency = 100;
 
 
@@ -92,6 +87,7 @@ const app = express();
 
 app.get('/get_titles', async (req, res) => {
     result = '';
+
     const hosts =
         fs
             .readFileSync('hosts.txt')
@@ -102,8 +98,6 @@ app.get('/get_titles', async (req, res) => {
     queue.drain(() => {
         res.write(result);
         res.end();
-
-        console.log("-- All tasks are complete --");
     });
 
     await queue.push(hosts);
