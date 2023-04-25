@@ -1,7 +1,6 @@
-import argyle from './packages/argyle';
-//import scan from './scan';
+import Argyle from './packages/argyle';
 
-const socks5_server = argyle(1084, '0.0.0.0', true);
+const socks5_server = new Argyle(1084, '0.0.0.0', true);
 
 socks5_server.on('connected', (req, dest) => {
     req

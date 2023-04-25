@@ -107,10 +107,10 @@ function expandAndCopy(old, newer) {
     return newBuf;
 }
 
-class Argyle extends EventEmitter {
+export default class Argyle extends EventEmitter {
     socksVersion = 5
 
-    constructor(port, host, debug) {
+    constructor(port = 8080, host = '127.0.0.1', debug) {
         super();
 
         if (!!debug) {
@@ -215,7 +215,7 @@ class Argyle extends EventEmitter {
                 return client.end(new Buffer([0x05, 0x01]))
             }
 
-            let addressType = buffer[3];
+            const addressType = buffer[3];
             let host;
             let port;
             let responseBuf;
@@ -337,15 +337,3 @@ class Argyle extends EventEmitter {
         }
     }
 }
-
-export default (port, host, debug) => {
-    if (!port) {
-        port = 8080
-    }
-
-    if (!host) {
-        host = '127.0.0.1'
-    }
-
-    return new Argyle(port, host, debug)
-};
