@@ -134,9 +134,9 @@ class Argyle extends EventEmitter {
     }
 
     handleConnection(client) {
+        const handlers = {};
+        const self = this;
         let curState = STATES.handshake;
-        let handlers = {};
-        let self = this;
 
         function onClientData(chunk) {
             handlers[curState](chunk)
@@ -195,9 +195,7 @@ class Argyle extends EventEmitter {
 
         let proxyBuffers = [];
 
-        handlers[STATES.request] = chunk => {
-            let req_port;
-
+        handlers[STATES.request] = async chunk => {
             buffer = expandAndCopy(buffer, chunk)
 
             if (buffer.length < 4) {
@@ -273,98 +271,65 @@ class Argyle extends EventEmitter {
 
             client.pause()
 
-            const dest_host = `${host}:${port}`;
-            let connected = false;
-
             if (!telnet_ready) {
                 return client.end(new Buffer([0x05, 0x01]))
             }
+
+            const dest_host = `${host}:${port}`;
+            let connected = false;
+            let req_port;
 
             if (domains_map.includes(dest_host)) {
                 req_port = domains_map.indexOf(dest_host);
 
                 console.log(`Found (${req_port}): ${params.host}:${req_port} = ${dest_host}`);
-
-                const dest = net.createConnection(req_port, params.host, () => {
-                    responseBuf[1] = 0
-                    responseBuf[2] = 0
-
-                    client.write(responseBuf) // emit success to a client
-                    client.removeListener('data', onClientData)
-                    client.resume()
-
-                    self.emit('connected', client, dest)
-                    connected = true
-                    if (buffer && buffer.length) {
-                        client.emit(buffer)
-                        buffer = null
-                    }
-
-                    // re-emit any leftover data for proxy to handle
-                    for (let j = 0; j < proxyBuffers.length; j++) {
-                        client.emit('data', proxyBuffers[i])
-                    }
-                    proxyBuffers = []
-                })
-                    .once('error', err => {
-                        if (!connected) {
-                            client.end(new Buffer([0x05, 0x01]))
-                        }
-                    })
-                    .once('close', () => {
-                        if (!connected) {
-                            client.end()
-                        }
-                    })
-                    .once('timeout', () => {
-                        if (!connected) {
-                            client.end()
-                        }
-                    });
             } else {
                 domains_map.push(dest_host);
                 req_port = domains_map.indexOf(dest_host);
 
-                queue.push([`iptables -t nat -I FORWARDS -p TCP --dport ${req_port} -j DNAT --to "${host}":${port}; iptables -t nat -D POSTROUTING -d "${host}" -p TCP --dport ${port} -j MASQUERADE; iptables -t nat -I POSTROUTING -d "${host}" -p TCP --dport ${port} -j MASQUERADE`], response => {
-                    console.log(`Added (${req_port}): ${params.host}:${req_port} = ${dest_host}`);
-                    const dest = net.createConnection(req_port, params.host, () => {
-                        responseBuf[1] = 0
-                        responseBuf[2] = 0
+                await queue.push([`iptables -t nat -I FORWARDS -p TCP --dport ${req_port} -j DNAT --to "${host}":${port}; iptables -t nat -D POSTROUTING -d "${host}" -p TCP --dport ${port} -j MASQUERADE; iptables -t nat -I POSTROUTING -d "${host}" -p TCP --dport ${port} -j MASQUERADE`]);
 
-                        client.write(responseBuf) // emit success to a client
-                        client.removeListener('data', onClientData)
-                        client.resume()
-
-                        self.emit('connected', client, dest)
-                        connected = true
-                        if (buffer && buffer.length) {
-                            client.emit(buffer)
-                            buffer = null
-                        }
-
-                        // re-emit any leftover data for proxy to handle
-                        for (let j = 0; j < proxyBuffers.length; j++) {
-                            client.emit('data', proxyBuffers[i])
-                        }
-                        proxyBuffers = []
-                    })
-                        .once('error', err => {
-                            if (!connected) {
-                                client.end(new Buffer([0x05, 0x01]))
-                            }
-                        })
-                        .once('close', () => {
-                            if (!connected) {
-                                client.end()
-                            }
-                        })
-                        .once('timeout', () => {
-                            if (!connected) {
-                                client.end()
-                            }
-                        });
-                });
+                console.log(`Added (${req_port}): ${params.host}:${req_port} = ${dest_host}`);
             }
+
+            const dest = net.createConnection(req_port, params.host, () => {
+                responseBuf[1] = 0
+                responseBuf[2] = 0
+
+                client.write(responseBuf) // emit success to a client
+                client.removeListener('data', onClientData)
+                client.resume()
+
+                self.emit('connected', client, dest)
+                connected = true
+
+                if (buffer && buffer.length) {
+                    client.emit(buffer)
+                    buffer = null
+                }
+
+                // re-emit any leftover data for proxy to handle
+                for (let j = 0; j < proxyBuffers.length; j++) {
+                    client.emit('data', proxyBuffers[i])
+                }
+
+                proxyBuffers = []
+            })
+                .once('error', err => {
+                    if (!connected) {
+                        client.end(new Buffer([0x05, 0x01]))
+                    }
+                })
+                .once('close', () => {
+                    if (!connected) {
+                        client.end()
+                    }
+                })
+                .once('timeout', () => {
+                    if (!connected) {
+                        client.end()
+                    }
+                });
         }
 
         handlers[STATES.forwarding] = chunk => {
