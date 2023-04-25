@@ -286,12 +286,11 @@ class Argyle extends EventEmitter {
                 console.log(`Found (${req_port}): ${params.host}:${req_port} = ${dest_host}`);
 
                 const dest = net.createConnection(req_port, params.host, () => {
-                    //var dest = net.createConnection(port, host, function() {
                     responseBuf[1] = 0
                     responseBuf[2] = 0
-                    client.write(responseBuf) // emit success to client
-                    client.removeListener('data', onClientData)
 
+                    client.write(responseBuf) // emit success to a client
+                    client.removeListener('data', onClientData)
                     client.resume()
 
                     self.emit('connected', client, dest)
@@ -335,13 +334,16 @@ class Argyle extends EventEmitter {
                         client.write(responseBuf) // emit success to a client
                         client.removeListener('data', onClientData)
                         client.resume()
+
                         self.emit('connected', client, dest)
                         connected = true
                         if (buffer && buffer.length) {
                             client.emit(buffer)
                             buffer = null
                         }
-                        for (let j = 0; j < proxyBuffers.length; j++) { // re-emit any leftover data for proxy to handle
+
+                        // re-emit any leftover data for proxy to handle
+                        for (let j = 0; j < proxyBuffers.length; j++) {
                             client.emit('data', proxyBuffers[i])
                         }
                         proxyBuffers = []
