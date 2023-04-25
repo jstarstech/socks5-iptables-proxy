@@ -219,50 +219,57 @@ export default class Socks5ipt extends EventEmitter {
             let port;
             let responseBuf;
 
-            if (addressType === 0x01) { // ipv4
-                // 4 for host + 2 for port
-                if (buffer.length < 10) {
-                    return
-                }
+            switch (addressType) {
+                // ipv4
+                case 0x01:
+                    // 4 for host + 2 for port
+                    if (buffer.length < 10) {
+                        return
+                    }
 
-                host = util.format('%d.%d.%d.%d', buffer[4], buffer[5], buffer[6], buffer[7])
-                port = buffer.readUInt16BE(8)
-                responseBuf = new Buffer(10)
-                buffer.copy(responseBuf, 0, 0, 10)
-                buffer = buffer.slice(10)
-            } else if (addressType === 0x03) { // dns
-                // if no length presents yet
-                if (buffer.length < 5) {
-                    return
-                }
+                    host = util.format('%d.%d.%d.%d', buffer[4], buffer[5], buffer[6], buffer[7])
+                    port = buffer.readUInt16BE(8)
+                    responseBuf = new Buffer(10)
+                    buffer.copy(responseBuf, 0, 0, 10)
+                    buffer = buffer.slice(10)
+                    break;
+                // dns
+                case 0x03:
+                    // if no length presents yet
+                    if (buffer.length < 5) {
+                        return
+                    }
 
-                const addrLength = buffer[4];
+                    const addrLength = buffer[4];
 
-                // host + port
-                if (buffer.length < 5 + addrLength + 2) {
-                    return
-                }
+                    // host + port
+                    if (buffer.length < 5 + addrLength + 2) {
+                        return
+                    }
 
-                host = buffer.toString('utf8', 5, 5 + addrLength)
-                port = buffer.readUInt16BE(5 + addrLength)
-                responseBuf = new Buffer(5 + addrLength + 2)
-                buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2)
-                buffer = buffer.slice(5 + addrLength + 2)
-            } else if (addressType === 0x04) { // ipv6
-                // 16 for host + 2 for port
-                if (buffer.length < 22) {
-                    return
-                }
+                    host = buffer.toString('utf8', 5, 5 + addrLength)
+                    port = buffer.readUInt16BE(5 + addrLength)
+                    responseBuf = new Buffer(5 + addrLength + 2)
+                    buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2)
+                    buffer = buffer.slice(5 + addrLength + 2)
+                    break;
+                // ipv6
+                case 0x04:
+                    // 16 for host + 2 for port
+                    if (buffer.length < 22) {
+                        return
+                    }
 
-                host = buffer.slice(4, 20)
-                port = buffer.readUInt16BE(20)
-                responseBuf = new Buffer(22)
-                buffer.copy(responseBuf, 0, 0, 22)
-                buffer = buffer.slice(22);
-            } else {
-                self._debug('unsupported address type: %d', addressType)
+                    host = buffer.slice(4, 20)
+                    port = buffer.readUInt16BE(20)
+                    responseBuf = new Buffer(22)
+                    buffer.copy(responseBuf, 0, 0, 22)
+                    buffer = buffer.slice(22);
+                    break;
+                default:
+                    self._debug('unsupported address type: %d', addressType)
 
-                return client.end(new Buffer([0x05, 0x01]))
+                    return client.end(new Buffer([0x05, 0x01]))
             }
 
             self._debug('Request to %s:%s', host, port)
