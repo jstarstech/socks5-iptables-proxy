@@ -102,18 +102,6 @@ for (let i = 0; i < 9000; i++) {
     domainsMap[i] = 1;
 }
 
-function expandAndCopy(old, newer) {
-    if (!old) {
-        return newer;
-    }
-
-    const newBuf = Buffer.alloc(old.length + newer.length);
-    old.copy(newBuf);
-    newer.copy(newBuf, old.length);
-
-    return newBuf;
-}
-
 export default class Socks5ipt extends EventEmitter {
     socksVersion = 5;
     STATES = {
@@ -167,10 +155,10 @@ export default class Socks5ipt extends EventEmitter {
             })
             .on('data', onClientData)
 
-        let buffer = null;
+        let buffer = Buffer.allocUnsafe(0);
 
         handlers[this.STATES.handshake] = chunk => {
-            buffer = expandAndCopy(buffer, chunk)
+            buffer = Buffer.concat([buffer, chunk]);
 
             if (buffer.length < 2) {
                 return
@@ -197,11 +185,11 @@ export default class Socks5ipt extends EventEmitter {
 
                     if (buffer.length > nMethods + 2) {
                         const newChunk = buffer.slice(nMethods + 2);
-                        buffer = null
+                        buffer = Buffer.allocUnsafe(0);
                         handlers[this.STATES.request](newChunk)
                     }
 
-                    buffer = null
+                    buffer = Buffer.allocUnsafe(0);
 
                     return
                 }
@@ -214,7 +202,7 @@ export default class Socks5ipt extends EventEmitter {
         let proxyBuffers = [];
 
         handlers[this.STATES.request] = async chunk => {
-            buffer = expandAndCopy(buffer, chunk)
+            buffer = Buffer.concat([buffer, chunk]);
 
             if (buffer.length < 4) {
                 return
@@ -353,7 +341,7 @@ export default class Socks5ipt extends EventEmitter {
 
                 if (buffer && buffer.length) {
                     client.emit(buffer)
-                    buffer = null
+                    buffer =  Buffer.allocUnsafe(0);
                 }
 
                 // re-emit any leftover data for proxy to handle
