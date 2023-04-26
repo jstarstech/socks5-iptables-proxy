@@ -3,6 +3,7 @@ import util from 'util';
 import {EventEmitter} from 'events';
 import {Telnet} from 'telnet-client';
 import async from "async";
+import { Buffer } from 'node:buffer';
 
 const debugOut = console.log.bind(console);
 
