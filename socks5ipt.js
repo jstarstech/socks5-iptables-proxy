@@ -1,10 +1,10 @@
-import net from 'net';
-import util from 'util';
-import {EventEmitter} from 'events';
-import {Telnet} from 'telnet-client';
-import async from "async";
-import { Buffer } from 'node:buffer';
+import net from 'node:net';
 import dns from 'node:dns';
+import util from 'node:util';
+import { Buffer } from 'node:buffer';
+import { EventEmitter } from 'node:events';
+import { Telnet } from 'telnet-client';
+import async from 'async';
 
 const debugOut = console.log.bind(console);
 
