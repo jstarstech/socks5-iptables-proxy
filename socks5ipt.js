@@ -73,7 +73,8 @@ queue.drain(() => {
         console.log("-- All tasks are complete --");
 
         queue.resume();
-    });
+    })
+        .then();
 });
 
 const domainsMap = [];
@@ -116,7 +117,12 @@ export default class Socks5ipt extends EventEmitter {
         this.serverSock
             .on('listening', () => {
                 const addr = this.serverSock.address();
-                this._debug('socks server listening on %s:%s', addr.address, addr.port)
+
+                if (typeof addr === 'object') {
+                    this._debug('socks server listening on %s:%s', addr.address, addr.port)
+                } else {
+                    this._debug('socks server listening on %s:%s', addr)
+                }
             })
             .on('connection', client => {
                 this.handleConnection(client)
@@ -138,6 +144,7 @@ export default class Socks5ipt extends EventEmitter {
             .on('end', () => {
             })
             .on('error', err => {
+                console.log(err);
             })
             .on('data', onClientData)
 
@@ -318,6 +325,8 @@ export default class Socks5ipt extends EventEmitter {
                     if (!connected) {
                         client.end(new Buffer([0x05, 0x01]))
                     }
+
+                    console.log(err);
                 })
                 .once('close', () => {
                     if (!connected) {
