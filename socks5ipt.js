@@ -247,7 +247,7 @@ export default class Socks5ipt extends EventEmitter {
                         return
                     }
 
-                    host = buffer.toString('utf8', 5, 5 + addrLength)
+                    host =  buffer.slice(5, 5 + addrLength).toString('utf8')
                     port = buffer.readUInt16BE(5 + addrLength)
                     responseBuf = new Buffer(5 + addrLength + 2)
                     buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2)
