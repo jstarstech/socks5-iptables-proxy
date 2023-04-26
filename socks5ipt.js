@@ -102,7 +102,7 @@ export default class Socks5ipt extends EventEmitter {
         forwarding: 2
     };
 
-    constructor(port = 8080, host = '127.0.0.1', debug) {
+    constructor(port = 1080, host = '127.0.0.1', debug) {
         super();
 
         if (!!debug) {
