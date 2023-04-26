@@ -267,6 +267,25 @@ export default class Socks5ipt extends EventEmitter {
                     }
 
                     host =  buffer.slice(5, 5 + addrLength).toString('utf8')
+
+                    try {
+                        host = await new Promise((resolve, reject) => {
+                            dns.lookup(host, {family: 4}, (err, address) => {
+                                if (err) {
+                                    return reject(err);
+                                }
+
+                                resolve(address);
+                            });
+                        });
+
+                        console.log(host);
+                    } catch (e) {
+                        self._debug(e);
+
+                        return client.end(Buffer.from([0x05, 0x01]))
+                    }
+
                     port = buffer.readUInt16BE(5 + addrLength)
                     responseBuf = Buffer.alloc(5 + addrLength + 2)
                     buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2)
