@@ -316,7 +316,7 @@ export default class Socks5ipt extends EventEmitter {
 
                 // re-emit any leftover data for proxy to handle
                 for (let j = 0; j < proxyBuffers.length; j++) {
-                    client.emit('data', proxyBuffers[i])
+                    client.emit('data', proxyBuffers[j])
                 }
 
                 proxyBuffers = []
