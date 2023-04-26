@@ -13,13 +13,13 @@ if (params.length) {
     params = JSON.parse(Buffer.from(params, 'base64'));
 } else {
     params = {
-        host: '5.35.33.51',
+        host: '192.168.99.207',
         port: 23,
         shellPrompt: /(#)s.*$/g,
         loginPrompt: /login[: ]*$/i,
-        username: 'admin',
-        password: '89652773088',
-        timeout: 1500
+        username: 'root',
+        password: 'root',
+        timeout: 5000
     };
 }
 
