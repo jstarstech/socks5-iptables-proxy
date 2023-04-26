@@ -53,30 +53,19 @@ connection.on('timeout', () => {
     //connection.end();
 });
 
+connection.on('error', () => {
+    console.log('connection error');
+});
 connection.on('close', () => {
     console.log('connection closed');
 });
 
-await connection.connect(params)
-
-queue.drain(() => {
-    queue.pause();
-
-    const commands = telnetCommandsQueue.join('; ');
-
-    connection.exec(commands, (err) => {
-        if (err) {
-            debugOut(err);
-        }
-
-        telnetCommandsQueue = [];
-
-        console.log("-- All tasks are complete --");
-
-        queue.resume();
-    })
-        .then();
-});
+try {
+    await connection.connect(params)
+} catch (e) {
+    console.log('Telnet:', params.host, params.port, e.toString());
+    process.exit(1);
+}
 
 const domainsMap = [];
 
