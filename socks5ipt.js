@@ -9,7 +9,7 @@ const debugOut = console.log.bind(console);
 let params = process.argv.slice(2)
 
 if (params.length) {
-    params = JSON.parse(new Buffer(params, 'base64').toString('utf8'));
+    params = JSON.parse(Buffer.from(params, 'base64'));
 } else {
     params = {
         host: '5.35.33.51',
@@ -88,7 +88,7 @@ function expandAndCopy(old, newer) {
         return newer;
     }
 
-    const newBuf = new Buffer(old.length + newer.length);
+    const newBuf = Buffer.alloc(old.length + newer.length);
     old.copy(newBuf);
     newer.copy(newBuf, old.length);
 
@@ -173,7 +173,7 @@ export default class Socks5ipt extends EventEmitter {
             for (let i = 0; i < nMethods; i++) {
                 // try to find the no-auth method type, and if found, choose it
                 if (buffer[i + 2] === 0) {
-                    client.write(new Buffer([0x05, 0x00]))
+                    client.write(Buffer.from([0x05, 0x00]))
                     curState++
 
                     if (buffer.length > nMethods + 2) {
@@ -189,7 +189,7 @@ export default class Socks5ipt extends EventEmitter {
             }
 
             self._debug('No supported auth methods found, disconnecting.')
-            client.end(new Buffer([0x05, 0xff]))
+            client.end(Buffer.from([0x05, 0xff]))
         }
 
         let proxyBuffers = [];
@@ -211,7 +211,7 @@ export default class Socks5ipt extends EventEmitter {
 
             if (cmd !== 0x01) {
                 self._debug('unsupported command: %d', cmd)
-                return client.end(new Buffer([0x05, 0x01]))
+                return client.end(Buffer.from([0x05, 0x01]))
             }
 
             const addressType = buffer[3];
@@ -229,7 +229,7 @@ export default class Socks5ipt extends EventEmitter {
 
                     host = util.format('%d.%d.%d.%d', buffer[4], buffer[5], buffer[6], buffer[7])
                     port = buffer.readUInt16BE(8)
-                    responseBuf = new Buffer(10)
+                    responseBuf = Buffer.alloc(10)
                     buffer.copy(responseBuf, 0, 0, 10)
                     buffer = buffer.slice(10)
                     break;
@@ -249,7 +249,7 @@ export default class Socks5ipt extends EventEmitter {
 
                     host =  buffer.slice(5, 5 + addrLength).toString('utf8')
                     port = buffer.readUInt16BE(5 + addrLength)
-                    responseBuf = new Buffer(5 + addrLength + 2)
+                    responseBuf = Buffer.alloc(5 + addrLength + 2)
                     buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2)
                     buffer = buffer.slice(5 + addrLength + 2)
                     break;
@@ -262,14 +262,14 @@ export default class Socks5ipt extends EventEmitter {
 
                     host = buffer.slice(4, 20)
                     port = buffer.readUInt16BE(20)
-                    responseBuf = new Buffer(22)
+                    responseBuf = Buffer.alloc(22)
                     buffer.copy(responseBuf, 0, 0, 22)
                     buffer = buffer.slice(22);
                     break;
                 default:
                     self._debug('unsupported address type: %d', addressType)
 
-                    return client.end(new Buffer([0x05, 0x01]))
+                    return client.end(Buffer.from([0x05, 0x01]))
             }
 
             self._debug('Request to %s:%s', host, port)
@@ -278,7 +278,7 @@ export default class Socks5ipt extends EventEmitter {
             client.pause()
 
             if (!telnetReady) {
-                return client.end(new Buffer([0x05, 0x01]))
+                return client.end(Buffer.from([0x05, 0x01]))
             }
 
             const destHost = `${host}:${port}`;
@@ -323,7 +323,7 @@ export default class Socks5ipt extends EventEmitter {
             })
                 .once('error', err => {
                     if (!connected) {
-                        client.end(new Buffer([0x05, 0x01]))
+                        client.end(Buffer.from([0x05, 0x01]))
                     }
 
                     console.log(err);
