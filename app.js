@@ -91,10 +91,10 @@ try {
     process.exit(1);
 }
 
-const domainsMap = [];
+const hostsMap = [];
 
 for (let i = 0; i < 9000; i++) {
-    domainsMap[i] = 1;
+    hostsMap[i] = 1;
 }
 
 const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
@@ -106,17 +106,17 @@ socks5ipt.hostMap = async (host, port) => {
         }
     }
 
-    const destHost = `${host}:${port}`;
+    const destHostPort = `${host}:${port}`;
 
     let reqPort;
 
-    if (domainsMap.includes(destHost)) {
-        reqPort = domainsMap.indexOf(destHost);
+    if (hostsMap.includes(destHostPort)) {
+        reqPort = hostsMap.indexOf(destHostPort);
 
-        console.log(`Found (${reqPort}): ${params.host}:${reqPort} = ${destHost}`);
+        console.log(`Found: ${params.host}:${reqPort} => ${destHostPort}`);
     } else {
-        domainsMap.push(destHost);
-        reqPort = domainsMap.indexOf(destHost);
+        hostsMap.push(destHostPort);
+        reqPort = hostsMap.indexOf(destHostPort);
 
         await queue.push(
             `iptables -t nat -I FORWARDS -p TCP --dport ${reqPort} -j DNAT --to ${host}:${port}; ` +
@@ -124,7 +124,7 @@ socks5ipt.hostMap = async (host, port) => {
             `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
         );
 
-        console.log(`Added (${reqPort}): ${params.host}:${reqPort} = ${destHost}`);
+        console.log(`Added: ${params.host}:${reqPort} = ${destHostPort}`);
     }
 
     return {
