@@ -113,27 +113,27 @@ export class TelnetInterface {
 
         const destHostPort = `${host}:${port}`;
 
-        let reqPort;
+        let destPort;
 
         if (this.hostsMap.includes(destHostPort)) {
-            reqPort = this.hostsMap.indexOf(destHostPort);
+            destPort = this.hostsMap.indexOf(destHostPort);
 
-            console.log(`Found: ${params.host}:${reqPort} => ${destHostPort}`);
+            console.log(`Found: ${params.host}:${destPort} => ${destHostPort}`);
         } else {
             this.hostsMap.push(destHostPort);
-            reqPort = this.hostsMap.indexOf(destHostPort);
+            destPort = this.hostsMap.indexOf(destHostPort);
 
             await this.queue.push(
-                `iptables -t nat -I FORWARDS -p TCP --dport ${reqPort} -j DNAT --to ${host}:${port}; ` +
+                `iptables -t nat -I FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
                 `iptables -t nat -D POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE; ` +
                 `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
             );
 
-            console.log(`Added: ${params.host}:${reqPort} = ${destHostPort}`);
+            console.log(`Added: ${params.host}:${destPort} = ${destHostPort}`);
         }
 
         return {
-            err: null, destHost: params.host, destPort: reqPort
+            err: null, destHost: params.host, destPort
         }
     }
 }
