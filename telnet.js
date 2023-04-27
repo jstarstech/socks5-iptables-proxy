@@ -1,59 +1,45 @@
-import {Buffer} from "node:buffer";
 import async from "async";
 import {Telnet} from "telnet-client";
-
-let params = process.argv.slice(2)
-
-if (params.length) {
-    params = JSON.parse(Buffer.from(params, 'base64'));
-} else {
-    params = {
-        host: '192.168.99.207',
-        port: 23,
-        shellPrompt: /(#)s.*$/g,
-        loginPrompt: /login[: ]*$/i,
-        username: 'root',
-        password: 'root',
-        timeout: 5000
-    };
-}
 
 export class TelnetInterface {
     hostsMap = [];
     telnetReady = false;
     queue;
     connection;
+    params = {};
 
-    constructor() {
+    constructor(params) {
+        if (!params) {
+            throw new Error('Params not provided');
+        }
+
+        this.params = params;
+
         for (let i = 0; i < 9000; i++) {
             this.hostsMap[i] = 1;
         }
 
-        this.queue = async.cargo((telnetCommands, callback) => {
+        this.queue = async.cargo(async (telnetCommands) => {
             this.queue.pause();
             const commands = telnetCommands.join('; ');
 
-            this.connection.exec(commands, (err) => {
-                if (err) {
-                    console.log(err);
-                }
+            console.log('Telnet:', commands);
 
-                if (telnetCommands.length > 1) {
-                    console.log(commands);
-                    console.log(`-- Processed ${telnetCommands.length} commands --`);
-                }
+            try {
+                await this.connection.exec(commands);
 
-                this.queue.resume();
+                console.log('Telnet:', `Executed ${telnetCommands.length} commands`);
+            } catch (e) {
+                console.log('Telnet:', e.toString());
+            }
 
-                callback();
-            })
-                .then();
+            this.queue.resume();
         }, 10);
 
         this.connection = new Telnet();
 
         this.connection.on('ready', async () => {
-            console.log("-- Telnet connected --");
+            console.log('Telnet: connected');
 
             await this.queue.push(
                 'iptables -D INPUT -p tcp --destination-port 9000:20000 -j ACCEPT;' +
@@ -67,7 +53,7 @@ export class TelnetInterface {
                 'iptables -D FORWARD -i ! br0 -o ppp0 -j DROP'
             );
 
-            console.log("-- Firewall FLUSH --");
+            console.log('Telnet: Firewall FLUSH');
 
             await this.queue.push(
                 'iptables -I INPUT -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
@@ -76,30 +62,27 @@ export class TelnetInterface {
                 'iptables -t nat -I PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS'
             );
 
-            console.log("-- Firewall ACCEPT --");
+            console.log('Telnet: Firewall ACCEPT');
 
             this.telnetReady = true;
         })
 
-        this.connection.on('timeout', () => {
-            console.log('socket timeout!')
-            //connection.end();
-        });
-
         this.connection.on('error', () => {
-            console.log('connection error');
+            console.log('Telnet: connection error');
         });
 
         this.connection.on('close', () => {
-            console.log('connection closed');
+            console.log('Telnet: connection closed. Exit application');
+
+            process.exit(1);
         });
     }
 
     async init() {
         try {
-            await this.connection.connect(params)
+            await this.connection.connect(this.params)
         } catch (e) {
-            console.log('Telnet:', params.host, params.port, e.toString());
+            console.log('Telnet:', this.params.host, this.params.port, e.toString());
             process.exit(1);
         }
     }
@@ -118,7 +101,7 @@ export class TelnetInterface {
         if (this.hostsMap.includes(destHostPort)) {
             destPort = this.hostsMap.indexOf(destHostPort);
 
-            console.log(`Found: ${params.host}:${destPort} => ${destHostPort}`);
+            console.log(`Found: ${this.params.host}:${destPort} => ${destHostPort}`);
         } else {
             this.hostsMap.push(destHostPort);
             destPort = this.hostsMap.indexOf(destHostPort);
@@ -130,11 +113,11 @@ export class TelnetInterface {
                 `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
             );
 
-            console.log(`Added: ${params.host}:${destPort} = ${destHostPort}`);
+            console.log(`Added: ${this.params.host}:${destPort} = ${destHostPort}`);
         }
 
         return {
-            err: null, destHost: params.host, destPort
+            err: null, destHost: this.params.host, destPort
         }
     }
 }

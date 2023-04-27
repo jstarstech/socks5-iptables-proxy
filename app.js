@@ -1,7 +1,24 @@
 import Socks5ipt from './socks5ipt.js';
 import {TelnetInterface} from './telnet.js';
+import {Buffer} from "node:buffer";
 
-const telnetInterface = new TelnetInterface();
+let params = process.argv.slice(2)
+
+if (params.length) {
+    params = JSON.parse(Buffer.from(params, 'base64'));
+} else {
+    params = {
+        host: '192.168.99.207',
+        port: 23,
+        shellPrompt: /(#)s.*$/g,
+        loginPrompt: /login[: ]*$/i,
+        username: 'root',
+        password: 'root',
+        timeout: 5000
+    };
+}
+
+const telnetInterface = new TelnetInterface(params);
 await telnetInterface.init();
 
 const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
