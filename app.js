@@ -102,7 +102,7 @@ const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
 socks5ipt.hostMap = async (host, port) => {
     if (!telnetReady) {
         return {
-            err: new Error('Telnet connection not ready'), host: params.host, port: reqPort
+            err: new Error('Telnet connection not ready'), host: null, port: null
         }
     }
 
@@ -128,7 +128,7 @@ socks5ipt.hostMap = async (host, port) => {
     }
 
     return {
-        err: null, host: params.host, port: reqPort
+        err: null, destHost: params.host, destPort: reqPort
     }
 }
 

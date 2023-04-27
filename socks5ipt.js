@@ -15,7 +15,7 @@ export default class Socks5ipt extends EventEmitter {
     };
     hostMap = async (host, port) => {
         return {
-            err: null, host, port
+            err: null, destHost: host, destPort: port
         }
     };
 
@@ -172,8 +172,6 @@ export default class Socks5ipt extends EventEmitter {
                                 resolve(address);
                             });
                         });
-
-                        console.log(host);
                     } catch (e) {
                         self._debug(e);
 
@@ -209,15 +207,15 @@ export default class Socks5ipt extends EventEmitter {
 
             client.pause()
 
-            const [err, destHost, destPort] = await this.hostMap(host, port);
+            const {err, destHost, destPort} = await this.hostMap(host, port);
 
-            if (!err) {
+            if (err) {
                 return client.end(Buffer.from([0x05, 0x01]))
             }
 
             let connected = false;
 
-            const dest = net.createConnection(destHost, destPort, () => {
+            const dest = net.createConnection(destPort, destHost, () => {
                 responseBuf[1] = 0
                 responseBuf[2] = 0
 
