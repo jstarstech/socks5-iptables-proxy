@@ -3,104 +3,6 @@ import dns from 'node:dns';
 import util from 'node:util';
 import {Buffer} from 'node:buffer';
 import {EventEmitter} from 'node:events';
-import {Telnet} from 'telnet-client';
-import async from 'async';
-
-const debugOut = console.log.bind(console);
-
-let params = process.argv.slice(2)
-
-if (params.length) {
-    params = JSON.parse(Buffer.from(params, 'base64'));
-} else {
-    params = {
-        host: '192.168.99.207',
-        port: 23,
-        shellPrompt: /(#)s.*$/g,
-        loginPrompt: /login[: ]*$/i,
-        username: 'root',
-        password: 'root',
-        timeout: 5000
-    };
-}
-
-const queue = async.cargo((telnetCommands, callback) => {
-    queue.pause();
-    const commands = telnetCommands.join('; ');
-
-    connection.exec(commands, (err) => {
-        if (err) {
-            debugOut(err);
-        }
-
-        if (telnetCommands.length > 1) {
-            console.log(commands);
-            console.log(`-- Processed ${telnetCommands.length} commands --`);
-        }
-
-        queue.resume();
-
-        callback();
-    })
-        .then();
-}, 10);
-
-const connection = new Telnet();
-let telnetReady = false;
-connection.on('ready', async () => {
-    console.log("-- Telnet connected --");
-
-    await queue.push(
-        'iptables -D INPUT -p tcp --destination-port 9000:20000 -j ACCEPT;' +
-        'iptables -D FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT;' +
-        'iptables -t nat -D PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS;' +
-        'iptables -t nat -F FORWARDS; iptables -t nat -X FORWARDS;' +
-        'iptables -D INPUT -j DROP; iptables -D INPUT -m state --state INVALID -j DROP;' +
-        'iptables -D FORWARD -m state --state INVALID -j DROP;' +
-        'iptables -D FORWARD ! -i br0 -o eth2.2 -j DROP;' +
-        'iptables -D FORWARD -j DROP; iptables -D FORWARD -i ! br0 -o eth0 -j DROP;' +
-        'iptables -D FORWARD -i ! br0 -o ppp0 -j DROP'
-    );
-
-    console.log("-- Firewall FLUSH --");
-
-    await queue.push(
-        'iptables -I INPUT -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
-        'iptables -I FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
-        'iptables -t nat -N FORWARDS && ' +
-        'iptables -t nat -I PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS'
-    );
-
-    console.log("-- Firewall ACCEPT --");
-
-    telnetReady = true;
-    queue.concurrency = 10;
-})
-
-connection.on('timeout', () => {
-    console.log('socket timeout!')
-    //connection.end();
-});
-
-connection.on('error', () => {
-    console.log('connection error');
-});
-connection.on('close', () => {
-    console.log('connection closed');
-});
-
-try {
-    await connection.connect(params)
-} catch (e) {
-    console.log('Telnet:', params.host, params.port, e.toString());
-    process.exit(1);
-}
-
-const domainsMap = [];
-
-for (let i = 0; i < 9000; i++) {
-    domainsMap[i] = 1;
-}
 
 export default class Socks5ipt extends EventEmitter {
     socksVersion = 5;
@@ -111,12 +13,17 @@ export default class Socks5ipt extends EventEmitter {
     };
     _debug = () => {
     };
+    hostMap = async (host, port) => {
+        return {
+            err: null, host, port
+        }
+    };
 
-    constructor(port = 1080, host = '127.0.0.1', debug) {
+    constructor(port = 1080, host = '127.0.0.1', debug = false) {
         super();
 
-        if (!!debug) {
-            this._debug = debugOut
+        if (debug) {
+            this._debug = console.log.bind(console);
         }
 
         this.serverSock = net.createServer()
@@ -302,32 +209,15 @@ export default class Socks5ipt extends EventEmitter {
 
             client.pause()
 
-            if (!telnetReady) {
+            const [err, destHost, destPort] = await this.hostMap(host, port);
+
+            if (!err) {
                 return client.end(Buffer.from([0x05, 0x01]))
             }
 
-            const destHost = `${host}:${port}`;
             let connected = false;
-            let reqPort;
 
-            if (domainsMap.includes(destHost)) {
-                reqPort = domainsMap.indexOf(destHost);
-
-                console.log(`Found (${reqPort}): ${params.host}:${reqPort} = ${destHost}`);
-            } else {
-                domainsMap.push(destHost);
-                reqPort = domainsMap.indexOf(destHost);
-
-                await queue.push(
-                    `iptables -t nat -I FORWARDS -p TCP --dport ${reqPort} -j DNAT --to ${host}:${port}; ` +
-                    `iptables -t nat -D POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE; ` +
-                    `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
-                );
-
-                console.log(`Added (${reqPort}): ${params.host}:${reqPort} = ${destHost}`);
-            }
-
-            const dest = net.createConnection(reqPort, params.host, () => {
+            const dest = net.createConnection(destHost, destPort, () => {
                 responseBuf[1] = 0
                 responseBuf[2] = 0
 
