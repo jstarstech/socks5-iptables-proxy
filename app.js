@@ -9,12 +9,8 @@ if (params.length) {
 } else {
     params = {
         host: '192.168.99.207',
-        port: 23,
-        shellPrompt: /(#)s.*$/g,
-        loginPrompt: /login[: ]*$/i,
         username: 'root',
-        password: 'root',
-        timeout: 5000
+        password: 'root'
     };
 }
 

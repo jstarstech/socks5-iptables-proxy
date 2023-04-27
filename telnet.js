@@ -6,14 +6,19 @@ export class TelnetInterface {
     telnetReady = false;
     queue;
     connection;
-    params = {};
+    params = {
+        port: 23,
+        shellPrompt: /(#)s.*$/g,
+        loginPrompt: /login[: ]*$/i,
+        timeout: 5000
+    };
 
     constructor(params) {
         if (!params) {
             throw new Error('Params not provided');
         }
 
-        this.params = params;
+        this.params = {...this.params, ...params};
 
         for (let i = 0; i < 9000; i++) {
             this.hostsMap[i] = 1;
@@ -82,8 +87,9 @@ export class TelnetInterface {
         try {
             await this.connection.connect(this.params)
         } catch (e) {
+            this.telnetReady = false;
+
             console.log('Telnet:', this.params.host, this.params.port, e.toString());
-            process.exit(1);
         }
     }
 
