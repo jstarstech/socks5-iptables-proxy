@@ -79,7 +79,6 @@ export class TelnetInterface {
             console.log("-- Firewall ACCEPT --");
 
             this.telnetReady = true;
-            this.queue.concurrency = 10;
         })
 
         this.connection.on('timeout', () => {
