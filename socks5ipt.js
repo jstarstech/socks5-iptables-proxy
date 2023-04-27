@@ -1,9 +1,9 @@
 import net from 'node:net';
 import dns from 'node:dns';
 import util from 'node:util';
-import { Buffer } from 'node:buffer';
-import { EventEmitter } from 'node:events';
-import { Telnet } from 'telnet-client';
+import {Buffer} from 'node:buffer';
+import {EventEmitter} from 'node:events';
+import {Telnet} from 'telnet-client';
 import async from 'async';
 
 const debugOut = console.log.bind(console);
@@ -109,15 +109,14 @@ export default class Socks5ipt extends EventEmitter {
         request: 1,
         forwarding: 2
     };
+    _debug = () => {
+    };
 
     constructor(port = 1080, host = '127.0.0.1', debug) {
         super();
 
         if (!!debug) {
             this._debug = debugOut
-        } else {
-            this._debug = () => {
-            }
         }
 
         this.serverSock = net.createServer()
@@ -254,7 +253,7 @@ export default class Socks5ipt extends EventEmitter {
                         return
                     }
 
-                    host =  buffer.slice(5, 5 + addrLength).toString('utf8')
+                    host = buffer.slice(5, 5 + addrLength).toString('utf8')
 
                     try {
                         host = await new Promise((resolve, reject) => {
@@ -341,7 +340,7 @@ export default class Socks5ipt extends EventEmitter {
 
                 if (buffer && buffer.length) {
                     client.emit(buffer)
-                    buffer =  Buffer.allocUnsafe(0);
+                    buffer = Buffer.allocUnsafe(0);
                 }
 
                 // re-emit any leftover data for proxy to handle
