@@ -124,6 +124,7 @@ export class TelnetInterface {
             destPort = this.hostsMap.indexOf(destHostPort);
 
             await this.queue.push(
+                `iptables -t nat -D FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
                 `iptables -t nat -I FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
                 `iptables -t nat -D POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE; ` +
                 `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
