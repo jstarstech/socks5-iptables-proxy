@@ -14,6 +14,7 @@
     "bufferjs": "^3.0.1",
     "express": "^4.18.2",
     "longjohn": "^0.2.12",
+    "ssh2": "^1.11.0",
     "telnet-client": "^2.0.8"
   },
   "author": "",

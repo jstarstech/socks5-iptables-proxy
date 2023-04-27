@@ -1,5 +1,6 @@
 import Socks5ipt from './socks5ipt.js';
 import {TelnetInterface} from './telnet.js';
+import {SSHInterface} from './ssh.js';
 import {Buffer} from "node:buffer";
 
 let params = process.argv.slice(2)
@@ -14,11 +15,15 @@ if (params.length) {
     };
 }
 
-const telnetInterface = new TelnetInterface(params);
-await telnetInterface.init();
-
 const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
-socks5ipt.hostMap = telnetInterface.hostMap.bind(telnetInterface);
+
+// const telnetInterface = new TelnetInterface(params);
+// await telnetInterface.init();
+// socks5ipt.hostMap = telnetInterface.hostMap.bind(telnetInterface);
+
+const sshInterface = new SSHInterface(params);
+await sshInterface.init();
+socks5ipt.hostMap = sshInterface.hostMap.bind(sshInterface);
 
 socks5ipt.on('connected', (req, dest) => {
     req
