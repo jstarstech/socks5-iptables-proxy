@@ -1,5 +1,5 @@
 {
-  "name": "socks5ipt",
+  "name": "socks5-iptables-proxy",
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
