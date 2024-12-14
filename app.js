@@ -5,6 +5,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// params is a base64 encoded argument with a JSON structure, e.g.:
+// eyJob3N0IjogIjE5Mi4xNjguMS4xIiwgInVzZXJuYW1lIjogInJvb3QiLCAicGFzc3dvcmQiOiAicm9vdCJ9
+// Decoded JSON structure:
+// {
+//     host: '192.168.1.1',
+//     username: 'root',
+//     password: 'root'
+// }
 let params = process.argv.slice(2);
 
 if (params.length) {
