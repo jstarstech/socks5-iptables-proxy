@@ -8,7 +8,7 @@ dotenv.config();
 let params = process.argv.slice(2);
 
 if (params.length) {
-    params = JSON.parse(Buffer.from(params, 'base64'));
+    params = JSON.parse(Buffer.from(params.join(''), 'base64').toString());
 } else {
     params = {
         host: '192.168.99.207',
