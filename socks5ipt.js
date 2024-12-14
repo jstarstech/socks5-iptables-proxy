@@ -107,7 +107,7 @@ export default class Socks5ipt extends EventEmitter {
             }
 
             self._debug('No supported auth methods found, disconnecting.');
-            client.end(Buffer.from([0x05, 0xff]));
+            client.end(Buffer.from([0x05, 0xff])); // 0xff: No acceptable methods
         };
 
         let proxyBuffers = [];
@@ -122,14 +122,14 @@ export default class Socks5ipt extends EventEmitter {
             const socksVersion = buffer[0];
             if (socksVersion !== this.socksVersion) {
                 self._debug('unsupported client version: %d', socksVersion);
-                return client.end();
+                return client.end(Buffer.from([0x05, 0x01])); // 0x01: General SOCKS server failure
             }
 
             const cmd = buffer[1];
 
             if (cmd !== 0x01) {
                 self._debug('unsupported command: %d', cmd);
-                return client.end(Buffer.from([0x05, 0x01]));
+                return client.end(Buffer.from([0x05, 0x07])); // 0x07: Command not supported
             }
 
             const addressType = buffer[3];
@@ -180,7 +180,7 @@ export default class Socks5ipt extends EventEmitter {
                     } catch (e) {
                         self._debug(e);
 
-                        return client.end(Buffer.from([0x05, 0x01]));
+                        return client.end(Buffer.from([0x05, 0x04])); // 0x04: Host unreachable
                     }
 
                     port = buffer.readUInt16BE(5 + addrLength);
@@ -204,7 +204,7 @@ export default class Socks5ipt extends EventEmitter {
                 default:
                     self._debug('unsupported address type: %d', addressType);
 
-                    return client.end(Buffer.from([0x05, 0x01]));
+                    return client.end(Buffer.from([0x05, 0x08])); // 0x08: Address type not supported
             }
 
             self._debug('Request to %s:%s', host, port);
@@ -253,7 +253,7 @@ export default class Socks5ipt extends EventEmitter {
                 })
                 .once('close', () => {
                     if (!connected) {
-                        client.end();
+                        client.end(Buffer.from([0x05, 0x01])); // 0x01: General SOCKS server failure
                     }
                 })
                 .once('timeout', () => {
