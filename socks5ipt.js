@@ -74,7 +74,7 @@ export default class Socks5ipt extends EventEmitter {
 
             if (socksVersion !== this.socksVersion) {
                 self._debug('unsupported client version: %d', socksVersion);
-                return client.end();
+                return client.end(Buffer.from([0x05, 0x01])); // 0x01: General SOCKS server failure
             }
 
             const nMethods = buffer[1];
