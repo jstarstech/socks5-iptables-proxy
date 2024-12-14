@@ -10,11 +10,8 @@ let params = process.argv.slice(2);
 if (params.length) {
     params = JSON.parse(Buffer.from(params.join(''), 'base64').toString());
 } else {
-    params = {
-        host: '192.168.99.207',
-        username: 'root',
-        password: 'root'
-    };
+    console.error('No parameters provided. Exiting...');
+    process.exit(1);
 }
 
 const port = process.env.PORT || 1080;
