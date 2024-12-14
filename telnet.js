@@ -1,5 +1,5 @@
-import async from "async";
-import {Telnet} from "telnet-client";
+import async from 'async';
+import { Telnet } from 'telnet-client';
 
 export class TelnetInterface {
     hostsMap = [];
@@ -18,13 +18,13 @@ export class TelnetInterface {
             throw new Error('Params not provided');
         }
 
-        this.params = {...this.params, ...params};
+        this.params = { ...this.params, ...params };
 
         for (let i = 0; i < 9000; i++) {
             this.hostsMap[i] = 1;
         }
 
-        this.queue = async.cargo(async (telnetCommands) => {
+        this.queue = async.cargo(async telnetCommands => {
             this.queue.pause();
             const commands = telnetCommands.join('; ');
 
@@ -48,29 +48,29 @@ export class TelnetInterface {
 
             await this.queue.push(
                 'iptables -D INPUT -p tcp --destination-port 9000:20000 -j ACCEPT;' +
-                'iptables -D FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT;' +
-                'iptables -t nat -D PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS;' +
-                'iptables -t nat -F FORWARDS; iptables -t nat -X FORWARDS;' +
-                'iptables -D INPUT -j DROP; iptables -D INPUT -m state --state INVALID -j DROP;' +
-                'iptables -D FORWARD -m state --state INVALID -j DROP;' +
-                'iptables -D FORWARD ! -i br0 -o eth2.2 -j DROP;' +
-                'iptables -D FORWARD -j DROP; iptables -D FORWARD -i ! br0 -o eth0 -j DROP;' +
-                'iptables -D FORWARD -i ! br0 -o ppp0 -j DROP'
+                    'iptables -D FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT;' +
+                    'iptables -t nat -D PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS;' +
+                    'iptables -t nat -F FORWARDS; iptables -t nat -X FORWARDS;' +
+                    'iptables -D INPUT -j DROP; iptables -D INPUT -m state --state INVALID -j DROP;' +
+                    'iptables -D FORWARD -m state --state INVALID -j DROP;' +
+                    'iptables -D FORWARD ! -i br0 -o eth2.2 -j DROP;' +
+                    'iptables -D FORWARD -j DROP; iptables -D FORWARD -i ! br0 -o eth0 -j DROP;' +
+                    'iptables -D FORWARD -i ! br0 -o ppp0 -j DROP'
             );
 
             console.log('Telnet: Firewall FLUSH');
 
             await this.queue.push(
                 'iptables -I INPUT -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
-                'iptables -I FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
-                'iptables -t nat -N FORWARDS && ' +
-                'iptables -t nat -I PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS'
+                    'iptables -I FORWARD -p tcp --destination-port 9000:20000 -j ACCEPT && ' +
+                    'iptables -t nat -N FORWARDS && ' +
+                    'iptables -t nat -I PREROUTING -p tcp --destination-port 9000:20000 -j FORWARDS'
             );
 
             console.log('Telnet: Firewall ACCEPT');
 
             this.telnetReady = true;
-        })
+        });
 
         this.connection.on('error', () => {
             console.log('Telnet: connection error');
@@ -85,7 +85,7 @@ export class TelnetInterface {
 
     async init() {
         try {
-            await this.connection.connect(this.params)
+            await this.connection.connect(this.params);
         } catch (e) {
             this.telnetReady = false;
 
@@ -96,8 +96,10 @@ export class TelnetInterface {
     async hostMap(host, port) {
         if (!this.telnetReady) {
             return {
-                err: new Error('Telnet connection not ready'), host: null, port: null
-            }
+                err: new Error('Telnet connection not ready'),
+                host: null,
+                port: null
+            };
         }
 
         const destHostPort = `${host}:${port}`;
@@ -114,16 +116,18 @@ export class TelnetInterface {
 
             await this.queue.push(
                 `iptables -t nat -D FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
-                `iptables -t nat -I FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
-                `iptables -t nat -D POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE; ` +
-                `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
+                    `iptables -t nat -I FORWARDS -p TCP --dport ${destPort} -j DNAT --to ${host}:${port}; ` +
+                    `iptables -t nat -D POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE; ` +
+                    `iptables -t nat -I POSTROUTING -d ${host} -p TCP --dport ${port} -j MASQUERADE`
             );
 
             console.log(`Added: ${this.params.host}:${destPort} = ${destHostPort}`);
         }
 
         return {
-            err: null, destHost: this.params.host, destPort
-        }
+            err: null,
+            destHost: this.params.host,
+            destPort
+        };
     }
 }

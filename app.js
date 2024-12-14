@@ -1,9 +1,8 @@
+import { Buffer } from 'node:buffer';
 import Socks5ipt from './socks5ipt.js';
-import {TelnetInterface} from './telnet.js';
-import {SSHInterface} from './ssh.js';
-import {Buffer} from "node:buffer";
+import { SSHInterface } from './ssh.js';
 
-let params = process.argv.slice(2)
+let params = process.argv.slice(2);
 
 if (params.length) {
     params = JSON.parse(Buffer.from(params, 'base64'));
@@ -26,25 +25,21 @@ await sshInterface.init();
 socks5ipt.hostMap = sshInterface.hostMap.bind(sshInterface);
 
 socks5ipt.on('connected', (req, dest) => {
-    req
-        .once('error', err => {
-            dest.end();
-            req.end();
-        })
-        .once('close', () => {
-            dest.end();
-            req.end();
-        });
+    req.once('error', err => {
+        dest.end();
+        req.end();
+    }).once('close', () => {
+        dest.end();
+        req.end();
+    });
 
-    dest
-        .once('error', err => {
-            dest.end();
-            req.end();
-        })
-        .once('close', () => {
-            dest.end();
-            req.end();
-        });
+    dest.once('error', err => {
+        dest.end();
+        req.end();
+    }).once('close', () => {
+        dest.end();
+        req.end();
+    });
 
     req.on('data', chunk => {
         dest.write(chunk);

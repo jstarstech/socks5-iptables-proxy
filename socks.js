@@ -24,7 +24,7 @@ const AUTHENTICATION = {
     NOAUTH: 0x00,
     GSSAPI: 0x01,
     USERPASS: 0x02,
-    NONE: 0xFF
+    NONE: 0xff
 };
 
 /*
@@ -40,11 +40,11 @@ const REQUEST_CMD = {
 };
 
 /*
-* o  ATYP   address type of following address
-*    o  IP V4 address: X'01'
-*    o  DOMAINNAME: X'03'
-*    o  IP V6 address: X'04'
-*/
+ * o  ATYP   address type of following address
+ *    o  IP V4 address: X'01'
+ *    o  DOMAINNAME: X'03'
+ *    o  IP V6 address: X'04'
+ */
 const ATYP = {
     IP_V4: 0x01,
     DNS: 0x03,
@@ -54,7 +54,13 @@ const ATYP = {
 const Address = {
     read(buffer, offset) {
         if (buffer[offset] === ATYP.IP_V4) {
-            return util.format('%s.%s.%s.%s', buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], buffer[offset + 4]);
+            return util.format(
+                '%s.%s.%s.%s',
+                buffer[offset + 1],
+                buffer[offset + 2],
+                buffer[offset + 3],
+                buffer[offset + 4]
+            );
         } else if (buffer[offset] === ATYP.DNS) {
             return buffer.toString('utf8', offset + 2, offset + 2 + buffer[offset + 1]);
         } else if (buffer[offset] === ATYP.IP_V6) {
@@ -137,7 +143,7 @@ function handshake(chunk) {
         this.write(resp);
     } else {
         errorLog('Unsuported authentication method -- disconnecting');
-        resp[1] = 0xFF;
+        resp[1] = 0xff;
         this.end(resp);
     }
 }
@@ -153,7 +159,7 @@ function handleRequest(chunk) {
         this.end('%d%d', 0x05, 0x01);
         errorLog('handleRequest: wrong socks version: %d', chunk[0]);
         return;
-    }/* else if (chunk[2] == 0x00) {
+    } /* else if (chunk[2] == 0x00) {
       this.end(util.format('%d%d', 0x05, 0x01));
       errorLog('handleRequest: Mangled request. Reserved field is not null: %d', chunk[offset]);
       return;
