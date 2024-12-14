@@ -50,8 +50,13 @@ export default class Socks5ipt extends EventEmitter {
         const self = this;
         let curState = this.STATES.handshake;
 
-        function onClientData(chunk) {
-            handlers[curState](chunk);
+        async function onClientData(chunk) {
+            try {
+                await handlers[curState](chunk);
+            } catch (err) {
+                console.error('Error handling client data:', err);
+                client.end();
+            }
         }
 
         client
