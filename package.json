@@ -12,6 +12,7 @@
     "@xmldom/xmldom": "^0.9.6",
     "async": "^3.2.6",
     "bufferjs": "^3.0.1",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "longjohn": "^0.2.12",
     "ssh2": "^1.16.0",

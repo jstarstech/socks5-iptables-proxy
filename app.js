@@ -1,6 +1,9 @@
 import { Buffer } from 'node:buffer';
 import Socks5ipt from './socks5ipt.js';
 import { SSHInterface } from './ssh.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 let params = process.argv.slice(2);
 
@@ -14,7 +17,10 @@ if (params.length) {
     };
 }
 
-const socks5ipt = new Socks5ipt(1084, '0.0.0.0', true);
+const port = process.env.PORT || 1080;
+const host = process.env.HOST || '0.0.0.0';
+
+const socks5ipt = new Socks5ipt(port, host, true);
 
 // const telnetInterface = new TelnetInterface(params);
 // await telnetInterface.init();
