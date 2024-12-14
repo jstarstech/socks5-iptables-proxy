@@ -95,7 +95,7 @@ export default class Socks5ipt extends EventEmitter {
                     curState++;
 
                     if (buffer.length > nMethods + 2) {
-                        const newChunk = buffer.slice(nMethods + 2);
+                        const newChunk = buffer.subarray(nMethods + 2);
                         buffer = Buffer.allocUnsafe(0);
                         handlers[this.STATES.request](newChunk);
                     }
@@ -149,7 +149,7 @@ export default class Socks5ipt extends EventEmitter {
                     port = buffer.readUInt16BE(8);
                     responseBuf = Buffer.alloc(10);
                     buffer.copy(responseBuf, 0, 0, 10);
-                    buffer = buffer.slice(10);
+                    buffer = buffer.subarray(10);
                     break;
                 // dns
                 case 0x03:
@@ -165,7 +165,7 @@ export default class Socks5ipt extends EventEmitter {
                         return;
                     }
 
-                    host = buffer.slice(5, 5 + addrLength).toString('utf8');
+                    host = buffer.subarray(5, 5 + addrLength).toString('utf8');
 
                     try {
                         host = await new Promise((resolve, reject) => {
@@ -186,7 +186,7 @@ export default class Socks5ipt extends EventEmitter {
                     port = buffer.readUInt16BE(5 + addrLength);
                     responseBuf = Buffer.alloc(5 + addrLength + 2);
                     buffer.copy(responseBuf, 0, 0, 5 + addrLength + 2);
-                    buffer = buffer.slice(5 + addrLength + 2);
+                    buffer = buffer.subarray(5 + addrLength + 2);
                     break;
                 // ipv6
                 case 0x04:
@@ -195,11 +195,11 @@ export default class Socks5ipt extends EventEmitter {
                         return;
                     }
 
-                    host = buffer.slice(4, 20);
+                    host = buffer.subarray(4, 20);
                     port = buffer.readUInt16BE(20);
                     responseBuf = Buffer.alloc(22);
                     buffer.copy(responseBuf, 0, 0, 22);
-                    buffer = buffer.slice(22);
+                    buffer = buffer.subarray(22);
                     break;
                 default:
                     self._debug('unsupported address type: %d', addressType);
